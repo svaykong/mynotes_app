@@ -14,7 +14,7 @@ class RootView extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const VerifyEmailView(),
+      home: const LoginView(),
       debugShowCheckedModeBanner: false,
       routes: AppRoutes.routes,
     );

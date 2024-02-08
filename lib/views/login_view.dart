@@ -47,37 +47,63 @@ class _LoginViewState extends State<LoginView> {
         title: const Text('Login'),
       ),
       body: SafeArea(
-        child: Center(
-          child: ModalProgressHUD(
-            inAsyncCall: _asyncCall,
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Flexible(
-                    child: EmailTextField(emailCtr: _emailCtr),
-                  ),
-                  Flexible(
-                    child: PasswordTextField(passCtr: _passCtr),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: ElevatedButton(
-                      onPressed: onLoginHandle,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppThemes.deepBlue,
-                      ),
-                      child: Text(
-                        'Login',
-                        style: TextStyle(
-                          color: AppThemes.white,
+        child: ModalProgressHUD(
+          inAsyncCall: _asyncCall,
+          child: Center(
+            child: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    EmailTextField(emailCtr: _emailCtr),
+                    PasswordTextField(passCtr: _passCtr),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: ElevatedButton(
+                        onPressed: onLoginHandle,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppThemes.deepBlue,
+                        ),
+                        child: Text(
+                          'Login',
+                          style: TextStyle(
+                            color: AppThemes.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Don\'t have account! ',
+                            style: TextStyle(
+                              color: AppThemes.black,
+                              fontSize: 14.0,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pushNamed(RegisterView.route);
+                            },
+                            child: const Text(
+                              'Register',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -103,7 +129,11 @@ class _LoginViewState extends State<LoginView> {
         _passCtr.clear();
 
         if (!context.mounted) return;
-        Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
+        if (userCredential.user?.emailVerified ?? false) {
+          Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
+        } else {
+          Navigator.of(context).pushNamedAndRemoveUntil(VerifyEmailView.route, (value) => false);
+        }
       } on FirebaseAuthException catch (e) {
         if (kDebugMode) print('FirebaseAuthException::$e');
       } finally {

@@ -4,11 +4,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
 import '../widgets/widget.dart';
-import 'login_view.dart';
 import '../utils/app_themes.dart';
+import 'view.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
+
+  static const route = '/register';
 
   @override
   State<RegisterView> createState() => _RegisterViewState();
@@ -44,10 +46,10 @@ class _RegisterViewState extends State<RegisterView> {
         title: const Text('Register'),
       ),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: ModalProgressHUD(
-              inAsyncCall: _asyncCall,
+        child: ModalProgressHUD(
+          inAsyncCall: _asyncCall,
+          child: Center(
+            child: SingleChildScrollView(
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -78,7 +80,7 @@ class _RegisterViewState extends State<RegisterView> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Already have account ',
+                            'Already have account!',
                             style: TextStyle(
                               color: AppThemes.black,
                               fontSize: 14.0,
@@ -87,7 +89,7 @@ class _RegisterViewState extends State<RegisterView> {
                           ),
                           TextButton(
                             onPressed: () {
-                              Navigator.of(context).pushNamed(LoginView.route);
+                              Navigator.of(context).pop();
                             },
                             child: const Text(
                               'Login',
@@ -129,6 +131,13 @@ class _RegisterViewState extends State<RegisterView> {
         /// clear text fields
         _emailCtr.clear();
         _passCtr.clear();
+
+        if (!context.mounted) return;
+        if (userCredential.user?.emailVerified ?? false) {
+          Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
+        } else {
+          Navigator.of(context).pushNamedAndRemoveUntil(VerifyEmailView.route, (value) => false);
+        }
       } on FirebaseAuthException catch (e) {
         print('FirebaseAuthException::$e');
       } finally {
