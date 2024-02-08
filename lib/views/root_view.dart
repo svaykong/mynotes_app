@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'register_view.dart';
+import 'view.dart';
+import '../utils/app_routes.dart';
 
 class RootView extends StatelessWidget {
   const RootView({super.key});
@@ -13,8 +14,9 @@ class RootView extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const RegisterView(),
+      home: const VerifyEmailView(),
       debugShowCheckedModeBanner: false,
+      routes: AppRoutes.routes,
     );
   }
 }
