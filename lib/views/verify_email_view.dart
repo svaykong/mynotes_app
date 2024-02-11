@@ -14,7 +14,7 @@ class VerifyEmailView extends StatefulWidget {
 
 class _VerifyEmailViewState extends State<VerifyEmailView> {
   bool _asyncCall = false;
-
+  bool _hasSent = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,14 +27,23 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
           inAsyncCall: _asyncCall,
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                const Text('Please verify your email address:'),
-                TextButton(
-                  onPressed: onEmailVerificationHandle,
-                  child: const Text('Send email verification'),
-                ),
-              ],
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Please verify your email address:',
+                    textAlign: TextAlign.center,
+                  ),
+                  !_hasSent
+                      ? TextButton(
+                          onPressed: onEmailVerificationHandle,
+                          child: const Text('Send email verification'),
+                        )
+                      : const Text('We have sent link verification to your email, please check.'),
+                ],
+              ),
             ),
           ),
         ),
@@ -49,6 +58,9 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
       });
       final user = FirebaseAuth.instance.currentUser;
       await user?.sendEmailVerification();
+      setState(() {
+        _hasSent = true;
+      });
     } on FirebaseAuthException catch (e) {
       if (kDebugMode) {
         print('onEmailVerificationHandle::$e');

@@ -1,9 +1,12 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../services/auth/bloc/auth_state.dart';
+import '../services/auth/bloc/auth_event.dart';
+import '../services/auth/auth_exception.dart';
+import '../services/auth/bloc/auth_bloc.dart';
+import '../utils/show_error_dialog.dart';
 import '../widgets/widget.dart';
 import '../views/view.dart';
 import '../utils/app_themes.dart';
@@ -22,7 +25,6 @@ class _LoginViewState extends State<LoginView> {
   late TextEditingController _emailCtr;
   late TextEditingController _passCtr;
   late FocusNode _passFocusNode;
-  bool _asyncCall = false;
 
   @override
   void initState() {
@@ -47,8 +49,27 @@ class _LoginViewState extends State<LoginView> {
         title: const Text('Login'),
       ),
       body: SafeArea(
-        child: ModalProgressHUD(
-          inAsyncCall: _asyncCall,
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) async {
+            if (state is AuthStateLoggedOut) {
+              if (state.exception is UserNotFoundAuthException) {
+                await showErrorDialog(
+                  context,
+                  "User not found",
+                );
+              } else if (state.exception is WrongPasswordAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Wrong Credentials",
+                );
+              } else if (state.exception is GenericAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Login Error Auth Error",
+                );
+              }
+            }
+          },
           child: Center(
             child: SingleChildScrollView(
               child: Form(
@@ -116,32 +137,11 @@ class _LoginViewState extends State<LoginView> {
     final email = _emailCtr.text;
     final password = _passCtr.text;
     if (_formKey.currentState!.validate()) {
-      try {
-        /// set bloc access: start
-        setState(() {
-          _asyncCall = true;
-        });
-        final userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
-        if (kDebugMode) print(userCredential);
+      context.read<AuthBloc>().add(AuthEventLogIn(email, password));
 
-        /// clear text fields
-        _emailCtr.clear();
-        _passCtr.clear();
-
-        if (!context.mounted) return;
-        if (userCredential.user?.emailVerified ?? false) {
-          Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
-        } else {
-          Navigator.of(context).pushNamedAndRemoveUntil(VerifyEmailView.route, (value) => false);
-        }
-      } on FirebaseAuthException catch (e) {
-        if (kDebugMode) print('FirebaseAuthException::$e');
-      } finally {
-        /// set bloc access: stop
-        setState(() {
-          _asyncCall = false;
-        });
-      }
+      /// clear text fields
+      // _emailCtr.clear();
+      // _passCtr.clear();
     }
   }
 }

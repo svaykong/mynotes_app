@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 
+import '../services/auth/auth_exception.dart';
+import '../services/auth/auth_service.dart';
+import '../utils/show_error_dialog.dart';
 import '../widgets/widget.dart';
 import '../utils/app_themes.dart';
 import 'view.dart';
@@ -120,8 +122,8 @@ class _RegisterViewState extends State<RegisterView> {
         setState(() {
           _asyncCall = true;
         });
-        final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
-        print(userCredential);
+        await AuthService.firebase().createUser(email: email, password: password);
+        final user = AuthService.firebase().currentUser;
 
         /// set bloc access: start
         setState(() {
@@ -133,13 +135,19 @@ class _RegisterViewState extends State<RegisterView> {
         _passCtr.clear();
 
         if (!context.mounted) return;
-        if (userCredential.user?.emailVerified ?? false) {
+        if (user?.isEmailVerified ?? false) {
           Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
         } else {
           Navigator.of(context).pushNamedAndRemoveUntil(VerifyEmailView.route, (value) => false);
         }
-      } on FirebaseAuthException catch (e) {
-        print('FirebaseAuthException::$e');
+      } on EmailAlreadyInUseAuthException {
+        await showErrorDialog(context, 'Email already used.');
+      } on InvalidEmailAuthException {
+        await showErrorDialog(context, 'Invalid email.');
+      } on WeakPasswordAuthException {
+        await showErrorDialog(context, 'Password is weak.');
+      } on GenericAuthException {
+        await showErrorDialog(context, 'Authentication error');
       } finally {
         /// set bloc access: stop
         setState(() {
