@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 import 'package:bloc/bloc.dart';
 
 import '../auth_provider.dart';
@@ -5,7 +7,10 @@ import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc(AuthProvider provider) : super(const AuthStateUninitialized(isLoading: true)) {
+  AuthBloc(AuthProvider provider)
+      : super(
+          const AuthStateUninitialized(isLoading: true),
+        ) {
     // should register
     on<AuthEventShouldRegister>((event, emit) {
       emit(const AuthStateRegistering(
@@ -132,6 +137,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           emit(AuthStateLoggedIn(user: user, isLoading: false));
         }
       } on Exception catch (e) {
+        if (kDebugMode) print('AuthEventLogin exception::$e');
         emit(
           AuthStateLoggedOut(
             exception: e,
@@ -144,6 +150,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     // logout
     on<AuthEventLogOut>((event, emit) async {
       try {
+        emit(
+          const AuthStateLoggedOut(
+            exception: null,
+            isLoading: true,
+            loadingText: 'Please wait while I log you out',
+          ),
+        );
         await provider.logout();
         emit(
           const AuthStateLoggedOut(

@@ -1,6 +1,7 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
+
 import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth, FirebaseAuthException;
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 
 import '../../firebase_options.dart';
 import 'auth_user.dart';
@@ -20,7 +21,7 @@ class FirebaseAuthProvider implements AuthProvider {
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        throw EmailAlreadyInUseAuthException;
+        throw EmailAlreadyInUseAuthException();
       } else if (e.code == 'invalid-email') {
         throw InvalidEmailAuthException();
       } else if (e.code == 'weak-password') {
@@ -54,10 +55,10 @@ class FirebaseAuthProvider implements AuthProvider {
         throw UserNotFoundAuthException();
       }
     } on FirebaseAuthException catch (e) {
+      if (kDebugMode) print('error code:: ${e.code}');
       if (e.code == 'invalid-credential') {
-        throw InvalidEmailAuthException();
+        throw InvalidCredentialAuthException();
       } else {
-        if (kDebugMode) print('error code:: ${e.code}');
         // network-request-failed (no internet exception)
         throw GenericAuthException();
       }

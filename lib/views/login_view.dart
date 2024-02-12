@@ -55,12 +55,12 @@ class _LoginViewState extends State<LoginView> {
               if (state.exception is UserNotFoundAuthException) {
                 await showErrorDialog(
                   context,
-                  "User not found",
+                  "User Not Found",
                 );
-              } else if (state.exception is WrongPasswordAuthException) {
+              } else if (state.exception is InvalidCredentialAuthException) {
                 await showErrorDialog(
                   context,
-                  "Wrong Credentials",
+                  "Invalid Email or Password",
                 );
               } else if (state.exception is GenericAuthException) {
                 await showErrorDialog(
@@ -69,7 +69,13 @@ class _LoginViewState extends State<LoginView> {
                 );
               }
             }
+            if (state is AuthStateLoggedIn) {
+              /// clear text fields
+              _emailCtr.clear();
+              _passCtr.clear();
+            }
           },
+          listenWhen: (prev, current) => false,
           child: Center(
             child: SingleChildScrollView(
               child: Form(
@@ -133,15 +139,11 @@ class _LoginViewState extends State<LoginView> {
     );
   }
 
-  Future<void> onLoginHandle() async {
+  void onLoginHandle() {
     final email = _emailCtr.text;
     final password = _passCtr.text;
     if (_formKey.currentState!.validate()) {
       context.read<AuthBloc>().add(AuthEventLogIn(email, password));
-
-      /// clear text fields
-      // _emailCtr.clear();
-      // _passCtr.clear();
     }
   }
 }

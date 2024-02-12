@@ -1,8 +1,11 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../services/auth/bloc/auth_state.dart';
+import '../helpers/loading/loading_screen.dart';
+import '../services/auth/bloc/auth_bloc.dart';
+import '../services/auth/bloc/auth_event.dart';
 
 class VerifyEmailView extends StatefulWidget {
   const VerifyEmailView({Key? key}) : super(key: key);
@@ -13,19 +16,36 @@ class VerifyEmailView extends StatefulWidget {
 }
 
 class _VerifyEmailViewState extends State<VerifyEmailView> {
-  bool _asyncCall = false;
-  bool _hasSent = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Verify Email'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              context.read<AuthBloc>().add(const AuthEventLogOut());
+            },
+            icon: const Icon(
+              Icons.logout,
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
-        child: ModalProgressHUD(
-          inAsyncCall: _asyncCall,
-          child: Padding(
+        child: BlocConsumer<AuthBloc, AuthState>(
+          listener: (context, state) {
+            /// produce some side affect tasks
+            if (state.isLoading) {
+              LoadingScreen().show(
+                context: context,
+                text: state.loadingText ?? 'Please wait a moment',
+              );
+            } else {
+              LoadingScreen().hide();
+            }
+          },
+          builder: (context, state) => Padding(
             padding: const EdgeInsets.all(8.0),
             child: Center(
               child: Column(
@@ -36,12 +56,10 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
                     'Please verify your email address:',
                     textAlign: TextAlign.center,
                   ),
-                  !_hasSent
-                      ? TextButton(
-                          onPressed: onEmailVerificationHandle,
-                          child: const Text('Send email verification'),
-                        )
-                      : const Text('We have sent link verification to your email, please check.'),
+                  TextButton(
+                    onPressed: onEmailVerificationHandle,
+                    child: const Text('Send email verification'),
+                  ),
                 ],
               ),
             ),
@@ -51,24 +69,7 @@ class _VerifyEmailViewState extends State<VerifyEmailView> {
     );
   }
 
-  Future<void> onEmailVerificationHandle() async {
-    try {
-      setState(() {
-        _asyncCall = true;
-      });
-      final user = FirebaseAuth.instance.currentUser;
-      await user?.sendEmailVerification();
-      setState(() {
-        _hasSent = true;
-      });
-    } on FirebaseAuthException catch (e) {
-      if (kDebugMode) {
-        print('onEmailVerificationHandle::$e');
-      }
-    } finally {
-      setState(() {
-        _asyncCall = false;
-      });
-    }
+  void onEmailVerificationHandle() {
+    context.read<AuthBloc>().add(const AuthEventSendEmailVerification());
   }
 }

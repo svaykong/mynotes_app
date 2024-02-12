@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../services/auth/bloc/auth_state.dart';
 import '../services/auth/auth_exception.dart';
-import '../services/auth/auth_service.dart';
+import '../services/auth/bloc/auth_bloc.dart';
+import '../services/auth/bloc/auth_event.dart';
 import '../utils/show_error_dialog.dart';
 import '../widgets/widget.dart';
 import '../utils/app_themes.dart';
-import 'view.dart';
 
 class RegisterView extends StatefulWidget {
   const RegisterView({super.key});
@@ -23,7 +24,6 @@ class _RegisterViewState extends State<RegisterView> {
   late TextEditingController _emailCtr;
   late TextEditingController _passCtr;
   late FocusNode _passFocusNode;
-  bool _asyncCall = false;
 
   @override
   void initState() {
@@ -48,8 +48,37 @@ class _RegisterViewState extends State<RegisterView> {
         title: const Text('Register'),
       ),
       body: SafeArea(
-        child: ModalProgressHUD(
-          inAsyncCall: _asyncCall,
+        child: BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) async {
+            if (state is AuthStateRegistering) {
+              if (state.exception is EmailAlreadyInUseAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Email Already In Use",
+                );
+              } else if (state.exception is WeakPasswordAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Weak Password",
+                );
+              } else if (state.exception is InvalidEmailAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Invalid Email",
+                );
+              } else if (state.exception is GenericAuthException) {
+                await showErrorDialog(
+                  context,
+                  "Auth Error",
+                );
+              }
+            }
+            if (state is AuthStateNeedsVerification) {
+              /// clear text fields
+              _emailCtr.clear();
+              _passCtr.clear();
+            }
+          },
           child: Center(
             child: SingleChildScrollView(
               child: Form(
@@ -113,47 +142,11 @@ class _RegisterViewState extends State<RegisterView> {
     );
   }
 
-  Future<void> onRegisterHandle() async {
+  void onRegisterHandle() {
     final email = _emailCtr.text;
     final password = _passCtr.text;
     if (_formKey.currentState!.validate()) {
-      try {
-        /// set bloc access: start
-        setState(() {
-          _asyncCall = true;
-        });
-        await AuthService.firebase().createUser(email: email, password: password);
-        final user = AuthService.firebase().currentUser;
-
-        /// set bloc access: start
-        setState(() {
-          _asyncCall = false;
-        });
-
-        /// clear text fields
-        _emailCtr.clear();
-        _passCtr.clear();
-
-        if (!context.mounted) return;
-        if (user?.isEmailVerified ?? false) {
-          Navigator.of(context).pushNamedAndRemoveUntil(HomeView.route, (value) => false);
-        } else {
-          Navigator.of(context).pushNamedAndRemoveUntil(VerifyEmailView.route, (value) => false);
-        }
-      } on EmailAlreadyInUseAuthException {
-        await showErrorDialog(context, 'Email already used.');
-      } on InvalidEmailAuthException {
-        await showErrorDialog(context, 'Invalid email.');
-      } on WeakPasswordAuthException {
-        await showErrorDialog(context, 'Password is weak.');
-      } on GenericAuthException {
-        await showErrorDialog(context, 'Authentication error');
-      } finally {
-        /// set bloc access: stop
-        setState(() {
-          _asyncCall = false;
-        });
-      }
+      context.read<AuthBloc>().add(AuthEventRegister(email, password));
     }
   }
 }
